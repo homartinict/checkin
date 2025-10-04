@@ -99,6 +99,14 @@
             document.getElementById('scanner-container').classList.add('hidden');
         }
 
+        function showNotFound(email) {
+            messageDisplay.textContent = `Recorded not found for: ${email}`;
+            errorIcon.classList.remove('hidden');
+            successIcon.classList.add('hidden');
+            resultIndicator.classList.remove('hidden');
+            document.getElementById('scanner-container').classList.add('hidden');
+        }
+
         /**
          * Displays the error state with the red X.
          */
@@ -166,7 +174,14 @@
                 // If the fetch call succeeds without a network error, we assume the Apps Script ran successfully.
                 // The Apps Script is designed to return a specific JSON success object, but 'no-cors' prevents us from checking it.
                 // For a successful POST fetch (even with 'no-cors'), we show success.
-                showSuccess(email);
+                switch (result.status) {
+                    case 'success':
+                        showSuccess(email);
+                        break;
+                    case 'notfound':
+                        showNotFound(email);
+                        break;
+                }
 
             } catch (error) {
                 console.error("Submission failed:", error);
