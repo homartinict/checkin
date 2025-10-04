@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Check-In System</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter Font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+    </style>
+    <!-- Load html5-qrcode library for scanning -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-lg bg-white shadow-xl rounded-xl p-6 md:p-8">
+        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">QR Code Check-In</h1>
+
+        <!-- API URL Setup -->
+        <div class="mb-6">
+            <label for="appsScriptUrl" class="block text-sm font-medium text-gray-700 mb-2">
+                1. Paste Google Apps Script URL here:
+            </label>
+            <input type="url" id="appsScriptUrl" placeholder="https://script.google.com/macros/s/..."
+                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+                   value=""
+            >
+            <p class="text-xs text-red-500 mt-2" id="url-status">
+                (See 'apps_script_backend_instructions.md' for setup guide.)
+            </p>
+        </div>
+
+        <!-- Scanning Area -->
+        <div id="scanner-container" class="border-4 border-dashed border-gray-300 rounded-xl p-4 mb-6 transition-all duration-300" style="min-height: 250px;">
+            <div id="reader" style="width: 100%;"></div>
+        </div>
+
+        <!-- Status and Results -->
+        <div id="status-area" class="text-center">
+            <p id="message" class="text-lg text-gray-600 font-semibold">Ready to scan...</p>
+        </div>
+
+        <!-- Submission Success/Error Indicator -->
+        <div id="result-indicator" class="mt-6 hidden transition-opacity duration-500">
+            <div class="flex flex-col items-center">
+                <!-- SVG Green Tick (Success) -->
+                <svg id="success-icon" class="w-24 h-24 text-green-500 hidden animate-bounce" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <!-- SVG Red X (Error) -->
+                <svg id="error-icon" class="w-24 h-24 text-red-500 hidden animate-bounce" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <button id="reset-button" class="mt-4 px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/50">
+                    Scan New QR
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const app = document.getElementById('app');
+        const readerId = 'reader';
+        const appsScriptUrlInput = document.getElementById('appsScriptUrl');
+        const messageDisplay = document.getElementById('message');
+        const resultIndicator = document.getElementById('result-indicator');
+        const successIcon = document.getElementById('success-icon');
+        const errorIcon = document.getElementById('error-icon');
+        const resetButton = document.getElementById('reset-button');
+        const urlStatus = document.getElementById('url-status');
+        let html5QrCode;
+
+        /**
+         * Converts a string to a URLSearchParams object for POST request.
+         * @param {string} email The email address from the QR code.
+         * @param {string} timestamp The current time string.
+         * @returns {string} URL encoded string.
+         */
+        function createFormData(email, timestamp) {
+            const params = new URLSearchParams();
+            params.append('email', email);
+            params.append('timestamp', timestamp);
+            return params.toString();
+        }
+
+        /**
+         * Displays the success state with the green tick.
+         */
+        function showSuccess(email) {
+            messageDisplay.textContent = `Success! Recorded check-in for: ${email}`;
+            successIcon.classList.remove('hidden');
+            errorIcon.classList.add('hidden');
+            resultIndicator.classList.remove('hidden');
+            document.getElementById('scanner-container').classList.add('hidden');
+        }
+
+        /**
+         * Displays the error state with the red X.
+         */
+        function showError(msg) {
+            messageDisplay.textContent = msg;
+            errorIcon.classList.remove('hidden');
+            successIcon.classList.add('hidden');
+            resultIndicator.classList.remove('hidden');
+            document.getElementById('scanner-container').classList.add('hidden');
+        }
+
+        /**
+         * Resets the application state to start scanning again.
+         */
+        function resetScanner() {
+            // Clear result state
+            resultIndicator.classList.add('hidden');
+            successIcon.classList.add('hidden');
+            errorIcon.classList.add('hidden');
+            document.getElementById('scanner-container').classList.remove('hidden');
+            messageDisplay.textContent = 'Ready to scan...';
+            
+            // Start the QR scanner
+            startScanner();
+        }
+
+        /**
+         * Handles the successful scan of a QR code.
+         * @param {string} decodedText The content of the QR code (expected to be an email).
+         */
+        async function onScanSuccess(decodedText) {
+            html5QrCode.stop().then(() => {
+                // Scanner stopped successfully
+            }).catch(err => {
+                console.error("Failed to stop scanner: ", err);
+            });
+
+            const email = decodedText.trim();
+            const appsScriptUrl = appsScriptUrlInput.value.trim();
+
+            if (!appsScriptUrl.startsWith('http')) {
+                showError('Error: Please enter a valid Google Apps Script Web App URL first.');
+                return;
+            }
+
+            messageDisplay.textContent = `Scanned: ${email}. Submitting data...`;
+
+            try {
+                // Get current timestamp in a readable format
+                const currentTime = new Date().toLocaleString();
+
+                const formData = createFormData(email, currentTime);
+
+                // --- API Call to Google Sheet via Apps Script ---
+                const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', // Required for Google Apps Script Web App calls
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData,
+                });
+
+                // Since we use 'no-cors' for Apps Script, we can't reliably read the response body or status.
+                // If the fetch call succeeds without a network error, we assume the Apps Script ran successfully.
+                // The Apps Script is designed to return a specific JSON success object, but 'no-cors' prevents us from checking it.
+                // For a successful POST fetch (even with 'no-cors'), we show success.
+                showSuccess(email);
+
+            } catch (error) {
+                console.error("Submission failed:", error);
+                showError(`Network Error: Could not reach the server. Check URL and connection.`);
+            }
+        }
+
+        /**
+         * Initializes and starts the QR code scanner.
+         */
+        function startScanner() {
+            // Check if the HTML5 QR Code object is initialized, if not, create it.
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode(readerId);
+            }
+            
+            // Configuration for the scanner
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+                // prefer front camera if available
+                facingMode: { ideal: "environment" } 
+            };
+            
+            // Start scanning
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, (errorMessage) => {
+                // Do not log minor scanning errors to keep console clean
+            })
+            .catch(err => {
+                messageDisplay.textContent = 'Error: Could not start camera. Make sure you grant permissions.';
+                console.error('Camera start error:', err);
+                // Hide the scanner container if camera fails
+                document.getElementById('scanner-container').classList.add('hidden');
+            });
+        }
+
+        // --- Event Listeners and Initialization ---
+
+        window.onload = () => {
+            resetButton.addEventListener('click', resetScanner);
+            appsScriptUrlInput.addEventListener('input', () => {
+                if (appsScriptUrlInput.value.startsWith('http')) {
+                    urlStatus.textContent = "URL accepted. Ready to scan!";
+                    urlStatus.classList.remove('text-red-500');
+                    urlStatus.classList.add('text-green-600');
+                } else {
+                    urlStatus.textContent = "(See 'apps_script_backend_instructions.md' for setup guide.)";
+                    urlStatus.classList.remove('text-green-600');
+                    urlStatus.classList.add('text-red-500');
+                }
+            });
+
+            // Initial start of the scanner
+            startScanner();
+        };
+
+    </script>
+</body>
+</html>
