@@ -174,7 +174,8 @@
                 // If the fetch call succeeds without a network error, we assume the Apps Script ran successfully.
                 // The Apps Script is designed to return a specific JSON success object, but 'no-cors' prevents us from checking it.
                 // For a successful POST fetch (even with 'no-cors'), we show success.
-                switch (result.status) {
+                showError(response.status);
+                switch (response.status) {
                     case 'success':
                         showSuccess(email);
                         break;
