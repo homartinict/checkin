@@ -25,7 +25,7 @@
         <!-- API URL Setup -->
         <div class="mb-6">
             <label for="appsScriptUrl" class="block text-sm font-medium text-gray-700 mb-2">
-                Version 4
+                Version 5
             </label>
             <input type="url" id="appsScriptUrl" placeholder="https://script.google.com/macros/s/..."
                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
@@ -174,8 +174,8 @@
                 // If the fetch call succeeds without a network error, we assume the Apps Script ran successfully.
                 // The Apps Script is designed to return a specific JSON success object, but 'no-cors' prevents us from checking it.
                 // For a successful POST fetch (even with 'no-cors'), we show success.
-                showError(response.status);
-                switch (response.status) {
+                // showError(response.status);
+                switch (response.result) {
                     case 'success':
                         showSuccess(email);
                         break;
