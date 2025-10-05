@@ -25,11 +25,11 @@
         <!-- API URL Setup -->
         <div class="mb-6">
             <label for="appsScriptUrl" class="block text-sm font-medium text-gray-700 mb-2">
-                Version 5
+                Version 6
             </label>
             <input type="url" id="appsScriptUrl" placeholder="https://script.google.com/macros/s/..."
                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-                   value="https://script.google.com/macros/s/AKfycbwEDo6_5meUvQOm637JhI_pLtjdd-pFhFC6dSVf7ZMirjNVbK_EGOBrRMj9hGc8yZ_K/exec"
+                   value="https://script.google.com/macros/s/AKfycbwjZNW4bVOhKeqcEv_DHdhzN714qyg8C5J74MDyWfUbym99RaCkjg6JD9AZK_vucs_C/exec"
             >
             
         </div>
@@ -170,19 +170,26 @@
                     body: formData,
                 });
 
+                const myArray = ["homartin@gmail.com", "homartin.ict@gmail.com"];
+
+                if (myArray.includes(email)) {
+                    showSuccess(email);
+                } else {
+                    showNotFound(email);
+                 }
                 // Since we use 'no-cors' for Apps Script, we can't reliably read the response body or status.
                 // If the fetch call succeeds without a network error, we assume the Apps Script ran successfully.
                 // The Apps Script is designed to return a specific JSON success object, but 'no-cors' prevents us from checking it.
                 // For a successful POST fetch (even with 'no-cors'), we show success.
                 // showError(response.status);
-                switch (response.result) {
+                /*switch (response.result) {
                     case 'success':
                         showSuccess(email);
                         break;
                     case 'notfound':
                         showNotFound(email);
                         break;
-                }
+                }*/
 
             } catch (error) {
                 console.error("Submission failed:", error);
