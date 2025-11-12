@@ -176,8 +176,8 @@
 
 		fetch(webAppUrl)
  		.then(response => response.json()) // Parse the response as JSON
-  		.then(emailArray => {
-   		 console.log("Emails loaded successfully:", emailArray);
+  		.then(myArray => {
+   		 console.log("Emails loaded successfully:", myArray);
     		// You can now use 'emailArray' just like a hardcoded array!
     		// Example: document.getElementById('output').textContent = emailArray.join(', ');
   		})
