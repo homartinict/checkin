@@ -276,7 +276,7 @@
         // --- Event Listeners and Initialization ---
 
         window.onload = () => {
-			fetchEmails();
+			
             resetButton.addEventListener('click', resetScanner);
             appsScriptUrlInput.addEventListener('input', () => {
                 if (appsScriptUrlInput.value.startsWith('http')) {
@@ -292,6 +292,13 @@
 
             // Initial start of the scanner
             startScanner();
+
+			try{
+				fetchEmails();
+			} catch (error) {
+				console.error("Fetch Emails failed:", error);
+                showError(`Fetch List error.`);
+			}
         };
 
     </script>
