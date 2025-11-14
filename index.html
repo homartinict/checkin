@@ -25,7 +25,7 @@
         <!-- API URL Setup -->
         <div class="mb-6">
             <label for="appsScriptUrl" class="block text-sm font-medium text-gray-700 mb-2">
-                Version 16
+                Version 18
             </label>
             <input type="url" id="appsScriptUrl" placeholder="https://script.google.com/macros/s/..."
                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
@@ -93,7 +93,7 @@
          * Displays the success state with the green tick.
          */
 		function fetchEmails() {
-            fetch(WEB_APP_URL)
+            fetch(webAppUrl)
                 .then(response => {
                     // Check if the response was successful (status 200)
                     if (!response.ok) {
